@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mind Gym Pro 2</title>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; justify-content:center; padding:18px 12px; font-family:system-ui,"Segoe UI",Arial,sans-serif; color:#eef6f8;
+         background:linear-gradient(135deg,#0b1f2a,#1b3b4b 45%,#2b2d5e); background-attachment:fixed; }
+  #app { width:100%; max-width:520px; }
+  .bg { position:fixed; inset:0; z-index:-1; overflow:hidden; }
+  .bg svg { position:absolute; inset:0; width:100%; height:100%; opacity:.12; }
+  .bubble { position:absolute; border-radius:50%; background:radial-gradient(circle at 30% 30%,#7dd3fc88,#a78bfa22); animation:float 14s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-40px); } }
+  .head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  h1 { margin:0; font-size:26px; } h2 { margin:0 0 10px; } h3 { margin:18px 0 8px; font-size:16px; color:#9ad7ee; }
+  .sub { color:#a9c0c9; margin:2px 0 0; font-size:14px; }
+  .card { background:rgba(255,255,255,.08); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.15); border-radius:16px; padding:16px; margin-bottom:12px; }
+  label { display:block; font-size:13px; color:#a9c0c9; margin:10px 0 4px; }
+  input, select { width:100%; font:inherit; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:rgba(0,0,0,.3); color:#fff; }
+  select option { color:#000; }
+  .err { color:#ff8a8a; min-height:18px; font-size:14px; margin-top:6px; }
+  .btn { font:inherit; padding:10px 16px; border-radius:10px; border:1px solid rgba(255,255,255,.2); background:#2f7bf0; color:#fff; cursor:pointer; margin:4px 6px 0 0; }
+  .btn.ghost { background:rgba(255,255,255,.08); }
+  .tiles { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .gt { text-align:left; font:inherit; color:#fff; cursor:pointer; padding:12px; border-radius:14px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.07); transition:.15s; }
+  .gt:hover { transform:translateY(-3px); border-color:#7dd3fc; background:rgba(125,211,252,.12); }
+  .gt .ico { font-size:30px; } .gt b { display:block; margin-top:4px; } .gt span { display:block; font-size:12px; color:#a9c0c9; min-height:32px; } .gt em { font-size:12px; color:#7dd3fc; font-style:normal; }
+  .hud { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; text-align:center; }
+  .hud div { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:10px; padding:6px 2px; }
+  .hud small { display:block; color:#a9c0c9; font-size:11px; } .hud b { font-size:15px; }
+  .bar { display:flex; justify-content:space-between; color:#a9c0c9; margin-bottom:8px; }
+  .msg { text-align:center; min-height:28px; margin:10px 0; font-size:18px; }
+  .grid { display:grid; gap:10px; }
+  .tile { aspect-ratio:1; border-radius:12px; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.12); cursor:pointer; transition:background .15s; }
+  .tile.lit { background:#38bdf8; box-shadow:0 0 18px #38bdf8; } .tile.wrong { background:#ef4444; }
+  .big { font-size:40px; text-align:center; letter-spacing:5px; margin:18px 0; font-variant-numeric:tabular-nums; }
+  .big.q { font-size:24px; letter-spacing:0; line-height:1.3; }
+  .answer { font-size:22px; text-align:center; }
+  .opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .opt { font:inherit; font-size:18px; padding:14px 8px; border-radius:12px; cursor:pointer; color:#fff; border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.1); }
+  .opt:hover { background:rgba(125,211,252,.2); } .opt.ok { background:#16a34a; } .opt.no { background:#dc2626; }
+  .reaction { height:200px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:24px; cursor:pointer; user-select:none; background:#334155; }
+  .reaction.wait { background:#b91c1c; } .reaction.go { background:#16a34a; }
+  .result { text-align:center; } .result .score { font-size:56px; font-weight:700; margin:6px 0; color:#7dd3fc; }
+  .stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; text-align:left; font-size:14px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; } th, td { text-align:left; padding:7px 4px; border-bottom:1px solid rgba(255,255,255,.12); } th { color:#a9c0c9; font-weight:500; }
+</style>
+</head>
+<body>
+<div class="bg">
+  <svg><defs><pattern id="hx" width="56" height="64" patternUnits="userSpaceOnUse"><path d="M28 2 54 17v30L28 62 2 47V17z" fill="none" stroke="#fff" stroke-width="1.5"/></pattern></defs><rect width="100%" height="100%" fill="url(#hx)"/></svg>
+  <div class="bubble" style="width:120px;height:120px;left:5%;top:15%"></div>
+  <div class="bubble" style="width:70px;height:70px;left:80%;top:30%;animation-delay:-4s"></div>
+  <div class="bubble" style="width:160px;height:160px;left:60%;top:70%;animation-delay:-8s"></div>
+  <div class="bubble" style="width:50px;height:50px;left:15%;top:75%;animation-delay:-2s"></div>
+</div>
+<main id="app"></main>
+
+<script>
+"use strict";
+
+/* ============ 1. CONFIG ============ */
+const DIFFICULTY = {
+  easy:   { label:"Easy",   lives:5, mult:1,   time:60, grid:3, speed:700, startLen:3, showPer:450 },
+  medium: { label:"Medium", lives:3, mult:1.5, time:45, grid:3, speed:550, startLen:4, showPer:350 },
+  hard:   { label:"Hard",   lives:2, mult:2,   time:30, grid:4, speed:400, startLen:5, showPer:250 }
+};
+const RANKS = [[1000,"Genius"],[600,"Expert"],[300,"Sharp Mind"],[100,"Learner"],[0,"Beginner"]];
+const rankFor = (s) => RANKS.find(r => s >= r[0])[1];
+const LOGO = `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#7dd3fc" stroke-width="2"><ellipse cx="24" cy="24" rx="20" ry="8"/><ellipse cx="24" cy="24" rx="20" ry="8" transform="rotate(60 24 24)"/><ellipse cx="24" cy="24" rx="20" ry="8" transform="rotate(120 24 24)"/><circle cx="24" cy="24" r="4" fill="#fbbf24" stroke="none"/></svg>`;
+
+/* ============ 2. HELPERS ============ */
+const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const pick = (arr) => arr[rand(0, arr.length - 1)];
+const shuffle = (arr) => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; };
+const sub = (f) => f.replace(/(\d)/g, "<sub>$1</sub>");   // H2O -> H<sub>2</sub>O
+
+/* ============ 3. STORE, LEADERBOARD, SOUND ============ */
+const Store = {
+  read(k, d) { try { const v = localStorage.getItem("mgp2_" + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  write(k, v) { try { localStorage.setItem("mgp2_" + k, JSON.stringify(v)); } catch (e) {} }
+};
+const Leaderboard = {
+  all() { return Store.read("scores", []); },
+  top(n = 10, gid = null) { return this.all().filter(s => !gid || s.gameId === gid).sort((a, b) => b.score - a.score).slice(0, n); },
+  best(gid) { const t = this.top(1, gid); return t.length ? t[0].score : 0; },
+  add(e) { const l = this.all(); l.push(e); l.sort((a, b) => b.score - a.score); Store.write("scores", l.slice(0, 150)); }
+};
+const Sound = {
+  on: Store.read("sound", true), ctx: null,
+  beep(f = 440, d = 0.12) {
+    if (!this.on) return;
+    try { this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = this.ctx.createOscillator(), g = this.ctx.createGain(); o.frequency.value = f; g.gain.value = 0.08;
+      o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + d); } catch (e) {}
+  },
+  good() { this.beep(660); }, bad() { this.beep(180, 0.25); },
+  toggle() { this.on = !this.on; Store.write("sound", this.on); }
+};
+
+/* ============ 4. SESSION: one play-through ============ */
+class Session {
+  constructor(player, diffKey, game, onChange, onEnd) {
+    Object.assign(this, { player, diffKey, diff: DIFFICULTY[diffKey], game, onChange, onEnd,
+      score: 0, lives: DIFFICULTY[diffKey].lives, streak: 0, bestStreak: 0, correct: 0, wrong: 0, level: 1, over: false });
+  }
+  get multiplier() { return Math.min(1 + Math.floor(this.streak / 3) * 0.5, 3); }
+  right(base) {
+    this.streak++; this.correct++; this.bestStreak = Math.max(this.bestStreak, this.streak);
+    const pts = Math.round(base * this.multiplier * this.diff.mult);
+    this.score += pts; this.level = 1 + Math.floor(this.correct / 5); this.onChange(this); return pts;
+  }
+  fail() { this.streak = 0; this.wrong++; this.lives--; this.onChange(this); if (this.lives <= 0) this.end("Out of lives"); }
+  end(reason) {
+    if (this.over) return; this.over = true;
+    const t = this.correct + this.wrong;
+    this.onEnd({ name: this.player, gameId: this.game.id, game: this.game.title, diff: this.diff.label, score: this.score,
+      correct: this.correct, wrong: this.wrong, bestStreak: this.bestStreak, level: this.level,
+      accuracy: t ? Math.round(this.correct / t * 100) : 0, reason: reason || "Game over", date: new Date().toLocaleDateString() });
+  }
+}
+
+/* ============ 5. GAMES ============ */
+const Games = [];
+
+/* ---- Reusable multiple-choice engine (used by the chemistry quizzes) ---- */
+function mcqGame(cfg) {
+  return { id: cfg.id, title: cfg.title, icon: cfg.icon, cat: cfg.cat, description: cfg.description,
+    start(root, S) {
+      let timers = [], locked = false;
+      root.innerHTML = `<div class="bar"><span id="tag"></span></div><div class="big q" id="q"></div><div class="opts" id="opts"></div><div class="msg" id="msg"></div>`;
+      const q = root.querySelector("#q"), opts = root.querySelector("#opts"), msg = root.querySelector("#msg"), tag = root.querySelector("#tag");
+      function next() {
+        const item = cfg.gen(); locked = false; msg.textContent = ""; opts.innerHTML = "";
+        tag.textContent = item.tag; q.innerHTML = item.q;
+        item.options.forEach(o => {
+          const b = el(`<button class="opt">${o}</button>`);
+          b.addEventListener("click", () => {
+            if (locked) return; locked = true;
+            if (o === item.answer) { b.classList.add("ok"); Sound.good(); msg.textContent = `✓ +${S.right(10)}`; }
+            else { b.classList.add("no"); Sound.bad(); msg.innerHTML = `✗ Answer: ${item.answer}`;
+              opts.querySelectorAll(".opt").forEach(x => { if (x.innerHTML === item.answer) x.classList.add("ok"); }); S.fail(); }
+            if (!S.over) timers.push(setTimeout(next, 1100));
+          });
+          opts.appendChild(b);
+        });
+      }
+      next();
+      return () => timers.forEach(clearTimeout);
+    } };
+}
+const choices = (answer, pool, n = 4) => shuffle([answer, ...shuffle(pool.filter(x => x !== answer)).slice(0, n - 1)]);
+
+/* ---- BRAIN GAME 1: Sequence Memory ---- */
+Games.push({ id:"sequence", title:"Sequence Memory", icon:"🧩", cat:"brain", description:"Watch the tiles flash, then repeat.",
+  start(root, S) {
+    const D = S.diff, n = D.grid * D.grid; let seq = [], step = 0, accepting = false, timers = [];
+    root.innerHTML = `<div class="msg" id="msg"></div><div class="grid" id="grid" style="grid-template-columns:repeat(${D.grid},1fr)"></div>`;
+    const grid = root.querySelector("#grid"), msg = root.querySelector("#msg");
+    const tiles = Array.from({ length: n }, (_, i) => { const t = el(`<button class="tile" aria-label="tile ${i + 1}"></button>`); t.addEventListener("click", () => onTile(i)); grid.appendChild(t); return t; });
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+    const flash = (i, c = "lit", ms = 300) => { tiles[i].classList.add(c); later(() => tiles[i].classList.remove(c), ms); };
+    function play() { accepting = false; step = 0; msg.textContent = "Watch...";
+      seq.forEach((t, k) => later(() => { flash(t); Sound.beep(300 + t * 30, 0.1); }, 500 + k * D.speed));
+      later(() => { accepting = true; msg.textContent = "Your turn"; }, 500 + seq.length * D.speed); }
+    function nextRound() { seq.push(rand(0, n - 1)); play(); }
+    function onTile(i) {
+      if (!accepting) return;
+      if (i !== seq[step]) { flash(i, "wrong", 400); Sound.bad(); accepting = false; S.fail();
+        if (!S.over) later(() => { msg.textContent = "Wrong! Watch again"; later(play, 700); }, 600); return; }
+      Sound.good(); flash(i, "lit", 200); step++;
+      if (step === seq.length) { accepting = false; msg.textContent = `+${S.right(10 * seq.length)} points!`; later(nextRound, 900); }
+    }
+    nextRound(); return () => timers.forEach(clearTimeout);
+  } });
+
+/* ---- BRAIN GAME 2: Quick Math ---- */
+Games.push({ id:"math", title:"Quick Math", icon:"➗", cat:"brain", description:"Solve sums before time ends.",
+  start(root, S) {
+    let answer = 0, timeLeft = S.diff.time, tick;
+    root.innerHTML = `<div class="bar"><span>Time</span><span id="tm">${timeLeft}s</span></div><div class="big" id="q"></div>
+      <input class="answer" id="ans" type="number" inputmode="numeric" autocomplete="off" placeholder="Answer + Enter"><div class="msg" id="msg"></div>`;
+    const q = root.querySelector("#q"), ans = root.querySelector("#ans"), tm = root.querySelector("#tm"), msg = root.querySelector("#msg");
+    function newQ() {
+      const hard = Math.min(S.level - 1, 6), ops = hard < 2 ? ["+", "-"] : ["+", "-", "×"], op = pick(ops);
+      let a = rand(2, 10 + hard * 8), b = rand(2, 10 + hard * 8);
+      if (op === "×") { a = rand(2, 6 + hard); b = rand(2, 9); }
+      if (op === "-" && b > a) [a, b] = [b, a];
+      answer = op === "+" ? a + b : op === "-" ? a - b : a * b; q.textContent = `${a} ${op} ${b}`; ans.value = ""; ans.focus();
+    }
+    ans.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || ans.value === "") return;
+      if (Number(ans.value) === answer) { Sound.good(); msg.textContent = `✓ +${S.right(10)}`; } else { Sound.bad(); msg.textContent = `✗ it was ${answer}`; S.fail(); }
+      if (!S.over) newQ();
+    });
+    tick = setInterval(() => { tm.textContent = --timeLeft + "s"; if (timeLeft <= 0) { clearInterval(tick); S.end("Time up"); } }, 1000);
+    newQ(); return () => clearInterval(tick);
+  } });
+
+/* ---- BRAIN GAME 3: Digit Span ---- */
+Games.push({ id:"digits", title:"Digit Span", icon:"🔢", cat:"brain", description:"Memorise the number before it vanishes.",
+  start(root, S) {
+    let len = S.diff.startLen, current = "", timers = [];
+    root.innerHTML = `<div class="bar"><span id="info"></span></div><div class="big" id="show"></div>
+      <input class="answer" id="ans" inputmode="numeric" autocomplete="off" placeholder="Type the number + Enter" disabled><div class="msg" id="msg"></div>`;
+    const show = root.querySelector("#show"), ans = root.querySelector("#ans"), msg = root.querySelector("#msg"), info = root.querySelector("#info");
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+    function round() { current = Array.from({ length: len }, () => rand(0, 9)).join(""); info.textContent = len + " digits"; msg.textContent = "Memorise..."; ans.value = ""; ans.disabled = true; show.textContent = current;
+      later(() => { show.textContent = "?"; ans.disabled = false; ans.focus(); msg.textContent = ""; }, 900 + len * S.diff.showPer); }
+    ans.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || ans.disabled) return; ans.disabled = true;
+      if (ans.value.trim() === current) { Sound.good(); msg.textContent = `✓ +${S.right(10 * len)}`; len++; later(round, 900); }
+      else { Sound.bad(); show.textContent = current; msg.textContent = "It was " + current; S.fail(); if (!S.over) later(round, 1600); }
+    });
+    round(); return () => timers.forEach(clearTimeout);
+  } });
+
+/* ---- BRAIN GAME 4: Reaction Speed ---- */
+Games.push({ id:"reaction", title:"Reaction Speed", icon:"⚡", cat:"brain", description:"Click the moment it turns green. 5 rounds.",
+  start(root, S) {
+    let state = "idle", t0 = 0, rounds = 0, wait = null, timers = [];
+    root.innerHTML = `<div class="reaction" id="box">Click to start</div><div class="msg" id="msg"></div>`;
+    const box = root.querySelector("#box"), msg = root.querySelector("#msg");
+    box.addEventListener("click", () => {
+      if (state === "idle") { state = "wait"; box.className = "reaction wait"; box.textContent = "Wait for green..."; msg.textContent = "";
+        wait = setTimeout(() => { state = "go"; box.className = "reaction go"; box.textContent = "CLICK!"; t0 = performance.now(); }, rand(1200, 3500)); }
+      else if (state === "wait") { clearTimeout(wait); state = "idle"; box.className = "reaction"; box.textContent = "Too early! Click to retry"; Sound.bad(); S.fail(); }
+      else if (state === "go") { const ms = Math.round(performance.now() - t0); const pts = S.right(Math.max(5, Math.round((600 - ms) / 6)));
+        Sound.good(); msg.textContent = `${ms} ms  (+${pts})`; rounds++; state = "idle"; box.className = "reaction"; box.textContent = "Click for next round";
+        if (rounds >= 5) timers.push(setTimeout(() => S.end("Finished 5 rounds"), 1200)); }
+    });
+    return () => { clearTimeout(wait); timers.forEach(clearTimeout); };
+  } });
+
+/* ---- CHEMISTRY DATA ---- */
+const ELEMENTS = [["Hydrogen","H",1],["Helium","He",2],["Lithium","Li",3],["Beryllium","Be",4],["Boron","B",5],["Carbon","C",6],["Nitrogen","N",7],["Oxygen","O",8],["Fluorine","F",9],["Neon","Ne",10],
+  ["Sodium","Na",11],["Magnesium","Mg",12],["Aluminium","Al",13],["Silicon","Si",14],["Phosphorus","P",15],["Sulphur","S",16],["Chlorine","Cl",17],["Argon","Ar",18],["Potassium","K",19],["Calcium","Ca",20],
+  ["Iron","Fe",26],["Nickel","Ni",28],["Copper","Cu",29],["Zinc","Zn",30],["Silver","Ag",47],["Tin","Sn",50],["Iodine","I",53],["Gold","Au",79],["Mercury","Hg",80],["Lead","Pb",82]];
+const COMPOUNDS = [["Water","H2O"],["Carbon dioxide","CO2"],["Table salt","NaCl"],["Ammonia","NH3"],["Methane","CH4"],["Sulphuric acid","H2SO4"],["Hydrochloric acid","HCl"],["Nitric acid","HNO3"],
+  ["Glucose","C6H12O6"],["Sodium hydroxide","NaOH"],["Calcium carbonate","CaCO3"],["Hydrogen peroxide","H2O2"],["Ozone","O3"],["Carbon monoxide","CO"],["Ethanol","C2H5OH"],["Baking soda","NaHCO3"]];
+const ACIDBASE = [["Lemon juice","Acid"],["Vinegar","Acid"],["Stomach acid","Acid"],["Orange juice","Acid"],["Coffee","Acid"],["Tomato","Acid"],["Hydrochloric acid","Acid"],
+  ["Baking soda","Base"],["Soap","Base"],["Ammonia solution","Base"],["Bleach","Base"],["Milk of magnesia","Base"],["Sodium hydroxide","Base"],["Pure water","Neutral"],["Table salt solution","Neutral"],["Sugar solution","Neutral"]];
+const WORDS = ["ATOM","MOLECULE","ELECTRON","PROTON","NEUTRON","ISOTOPE","CATALYST","REACTION","ELEMENT","COMPOUND","OXIDATION","SOLUTION","BENZENE","POLYMER","ENZYME","TITRATION","ALKANE","VALENCY","MIXTURE","INDICATOR"];
+
+/* ---- CHEMISTRY GAMES ---- */
+Games.push(mcqGame({ id:"elements", title:"Element Quiz", icon:"⚛️", cat:"chem", description:"Names, symbols and atomic numbers.",
+  gen() {
+    const e = pick(ELEMENTS), t = rand(0, 2), names = ELEMENTS.map(x => x[0]), syms = ELEMENTS.map(x => x[1]);
+    if (t === 0) return { tag: "Symbol", q: `What is the symbol of <b>${e[0]}</b>?`, answer: e[1], options: choices(e[1], syms) };
+    if (t === 1) return { tag: "Name", q: `Which element has the symbol <b>${e[1]}</b>?`, answer: e[0], options: choices(e[0], names) };
+    return { tag: "Atomic number", q: `Which element has atomic number <b>${e[2]}</b>?`, answer: e[0], options: choices(e[0], names) };
+  } }));
+
+Games.push(mcqGame({ id:"formulas", title:"Formula Match", icon:"🧪", cat:"chem", description:"Match compounds with formulas.",
+  gen() {
+    const c = pick(COMPOUNDS);
+    if (rand(0, 1)) return { tag: "Formula", q: `Chemical formula of <b>${c[0]}</b>?`, answer: sub(c[1]), options: choices(sub(c[1]), COMPOUNDS.map(x => sub(x[1]))) };
+    return { tag: "Compound", q: `Which compound is <b>${sub(c[1])}</b>?`, answer: c[0], options: choices(c[0], COMPOUNDS.map(x => x[0])) };
+  } }));
+
+Games.push(mcqGame({ id:"acidbase", title:"Acid or Base?", icon:"🧫", cat:"chem", description:"Classify everyday substances.",
+  gen() { const s = pick(ACIDBASE); return { tag: "pH", q: `Is <b>${s[0]}</b> an acid, a base or neutral?`, answer: s[1], options: ["Acid", "Base", "Neutral"] }; } }));
+
+Games.push({ id:"scramble", title:"Science Word Scramble", icon:"🔬", cat:"chem", description:"Unscramble chemistry terms.",
+  start(root, S) {
+    let word = "", timers = [];
+    root.innerHTML = `<div class="bar"><span id="hint"></span></div><div class="big" id="scr"></div>
+      <input class="answer" id="ans" autocomplete="off" placeholder="Your answer + Enter"><div class="msg" id="msg"></div>`;
+    const scr = root.querySelector("#scr"), ans = root.querySelector("#ans"), msg = root.querySelector("#msg"), hint = root.querySelector("#hint");
+    function round() { word = pick(WORDS); let s = word; while (s === word) s = shuffle(word.split("")).join("");
+      scr.textContent = s; hint.textContent = word.length + " letters"; ans.value = ""; ans.disabled = false; ans.focus(); }
+    ans.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" || ans.disabled || !ans.value.trim()) return; ans.disabled = true;
+      if (ans.value.trim().toUpperCase() === word) { Sound.good(); msg.textContent = `✓ +${S.right(4 * word.length)}`; }
+      else { Sound.bad(); msg.textContent = `✗ It was ${word}`; S.fail(); }
+      if (!S.over) timers.push(setTimeout(() => { msg.textContent = ""; round(); }, 1100));
+    });
+    round(); return () => timers.forEach(clearTimeout);
+  } });
+
+/* ============ 6. APP: screens ============ */
+const App = {
+  root: document.getElementById("app"), cleanup: null, session: null,
+  leave() { if (this.cleanup) { this.cleanup(); this.cleanup = null; } },
+
+  showHome() {
+    this.leave();
+    const savedName = Store.read("name", ""), savedDiff = Store.read("diff", "medium");
+    this.root.innerHTML = `
+      <div class="head">${LOGO}<div><h1>Mind Gym Pro 2</h1><p class="sub">Brain training + Chemistry Lab. Earn points, build streaks.</p></div></div>
+      <div class="card">
+        <label for="pname">Player name *</label><input id="pname" maxlength="20" placeholder="Enter your name" value="${esc(savedName)}">
+        <label for="pdiff">Difficulty *</label>
+        <select id="pdiff">${Object.entries(DIFFICULTY).map(([k, d]) => `<option value="${k}" ${k === savedDiff ? "selected" : ""}>${d.label} (${d.lives} lives, x${d.mult} points)</option>`).join("")}</select>
+        <div class="err" id="err"></div>
+        <h3>🧠 Brain Games</h3><div class="tiles" id="t-brain"></div>
+        <h3>⚗️ Chemistry Lab</h3><div class="tiles" id="t-chem"></div>
+      </div>
+      <button class="btn ghost" id="lb">🏆 Leaderboard</button><button class="btn ghost" id="snd">${Sound.on ? "🔊 Sound on" : "🔇 Sound off"}</button>
+      <div class="card" style="margin-top:12px"><b>How scoring works</b>
+        <p class="sub">Correct answers earn points. Every 3 correct in a row adds +0.5x streak bonus (max 3x). A wrong answer resets the streak and costs 1 life. Level rises every 5 correct answers.</p></div>`;
+    Games.forEach(g => {
+      const b = el(`<button class="gt"><div class="ico">${g.icon}</div><b>${g.title}</b><span>${g.description}</span><em>Best: ${Leaderboard.best(g.id)}</em></button>`);
+      b.addEventListener("click", () => this.startGame(g)); this.root.querySelector("#t-" + g.cat).appendChild(b);
+    });
+    this.root.querySelector("#lb").addEventListener("click", () => this.showLeaderboard());
+    this.root.querySelector("#snd").addEventListener("click", () => { Sound.toggle(); this.showHome(); });
+  },
+
+  startGame(game) {
+    const name = this.root.querySelector("#pname").value.trim(), diffKey = this.root.querySelector("#pdiff").value, err = this.root.querySelector("#err");
+    if (name.length < 2) { err.textContent = "Please enter a name (at least 2 characters)."; return; }
+    if (!DIFFICULTY[diffKey]) { err.textContent = "Please choose a difficulty."; return; }
+    Store.write("name", name); Store.write("diff", diffKey); this.play(game, name, diffKey);
+  },
+
+  play(game, name, diffKey) {
+    this.leave();
+    this.root.innerHTML = `<h2>${game.icon} ${game.title}</h2><div class="hud" id="hud"></div><div class="card" id="stage"></div><button class="btn ghost" id="quit">← Quit</button>`;
+    this.root.querySelector("#quit").addEventListener("click", () => { if (confirm("Quit this game? Your score will not be saved.")) this.showHome(); });
+    this.session = new Session(name, diffKey, game, (s) => this.updateHud(s), (sum) => this.showResult(sum));
+    this.updateHud(this.session);
+    this.cleanup = game.start(this.root.querySelector("#stage"), this.session);
+  },
+
+  updateHud(s) {
+    const hud = this.root.querySelector("#hud"); if (!hud) return;
+    hud.innerHTML = `<div><small>Score</small><b>${s.score}</b></div><div><small>Lives</small><b>${"❤️".repeat(Math.max(s.lives, 0))}</b></div>
+      <div><small>Level</small><b>${s.level}</b></div><div><small>Streak</small><b>${s.streak} (x${s.multiplier})</b></div>`;
+  },
+
+  showResult(sum) {
+    this.leave();
+    const record = sum.score > Leaderboard.best(sum.gameId) && sum.score > 0;
+    Leaderboard.add(sum);
+    const game = Games.find(g => g.id === sum.gameId), diffKey = Object.keys(DIFFICULTY).find(k => DIFFICULTY[k].label === sum.diff);
+    this.root.innerHTML = `<h2>${game.icon} ${sum.game}</h2><div class="card result">
+      <div>${record ? "🎉 New high score!" : esc(sum.reason)}</div><div class="score">${sum.score}</div>
+      <div class="sub">${esc(sum.name)} · Rank: <b>${rankFor(sum.score)}</b></div>
+      <div class="stats"><div>Correct: <b>${sum.correct}</b></div><div>Wrong: <b>${sum.wrong}</b></div><div>Accuracy: <b>${sum.accuracy}%</b></div>
+        <div>Best streak: <b>${sum.bestStreak}</b></div><div>Level: <b>${sum.level}</b></div><div>Difficulty: <b>${sum.diff}</b></div></div>
+      <button class="btn" id="again">Play again</button><button class="btn ghost" id="board">Leaderboard</button><button class="btn ghost" id="home">Home</button></div>`;
+    this.root.querySelector("#again").addEventListener("click", () => this.play(game, sum.name, diffKey));
+    this.root.querySelector("#board").addEventListener("click", () => this.showLeaderboard());
+    this.root.querySelector("#home").addEventListener("click", () => this.showHome());
+  },
+
+  showLeaderboard(gid = null) {
+    this.leave();
+    const rows = Leaderboard.top(10, gid);
+    this.root.innerHTML = `<h2>🏆 Leaderboard</h2><div class="card">
+      <select id="filter"><option value="">All games</option>${Games.map(g => `<option value="${g.id}" ${g.id === gid ? "selected" : ""}>${g.title}</option>`).join("")}</select>
+      <table style="margin-top:10px"><tr><th>#</th><th>Player</th><th>Game</th><th>Score</th></tr>
+      ${rows.length ? rows.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.game)}<br><small>${esc(r.diff)} · ${esc(r.date)}</small></td><td><b>${r.score}</b></td></tr>`).join("") : `<tr><td colspan="4">No scores yet. Play a game!</td></tr>`}</table></div>
+      <button class="btn ghost" id="home">← Home</button><button class="btn ghost" id="clear">Clear scores</button>`;
+    this.root.querySelector("#filter").addEventListener("change", (e) => this.showLeaderboard(e.target.value || null));
+    this.root.querySelector("#home").addEventListener("click", () => this.showHome());
+    this.root.querySelector("#clear").addEventListener("click", () => { if (confirm("Delete all saved scores?")) { Store.write("scores", []); this.showLeaderboard(); } });
+  }
+};
+
+App.showHome();
+</script>
+</body>
+</html>
